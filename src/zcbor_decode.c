@@ -1449,12 +1449,9 @@ bool zcbor_float_pexpect(zcbor_state_t *state, double *expected)
 }
 
 
-bool zcbor_any_skip(zcbor_state_t *state, void *result)
+static bool any_skip(zcbor_state_t *state, size_t max_depth)
 {
 	PRINT_FUNC();
-	zcbor_assert_state(result == NULL,
-			"'any' type cannot be returned, only skipped.\r\n");
-	(void)result;
 
 	INITIAL_CHECKS();
 	zcbor_major_type_t major_type = ZCBOR_MAJOR_TYPE(*state->payload);
@@ -1496,13 +1493,14 @@ bool zcbor_any_skip(zcbor_state_t *state, void *result)
 			value *= 2;
 			/* fallthrough */
 		case ZCBOR_MAJOR_TYPE_LIST:
+			ZCBOR_ERR_IF(max_depth == 0, ZCBOR_ERR_ITERATIONS);
 			if (indefinite_length_array) {
 				value = ZCBOR_LARGE_ELEM_COUNT;
 			}
 			state_copy.elem_count = (size_t)value;
 			state_copy.decode_state.indefinite_length_array = indefinite_length_array;
 			while (!zcbor_array_at_end(&state_copy)) {
-				if (!zcbor_any_skip(&state_copy, NULL)) {
+				if (!any_skip(&state_copy, max_depth - 1)) {
 					ZCBOR_FAIL();
 				}
 			}
@@ -1519,6 +1517,19 @@ bool zcbor_any_skip(zcbor_state_t *state, void *result)
 	state->elem_count--;
 
 	return true;
+}
+
+
+bool zcbor_any_skip(zcbor_state_t *state, void *result)
+{
+	zcbor_assert_state(result == NULL,
+			"'any' type cannot be returned, only skipped.\r\n");
+	(void)result;
+#ifdef ZCBOR_MAX_RECURSION_DEPTH
+	return any_skip(state, ZCBOR_MAX_RECURSION_DEPTH);
+#else
+	return any_skip(state, SIZE_MAX);
+#endif
 }
 
 

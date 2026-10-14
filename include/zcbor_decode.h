@@ -266,6 +266,13 @@ bool zcbor_array_at_end(zcbor_state_t *state);
  * skip all its contents.
  * This function will also skip any tags preceeding the element.
  *
+ * Define ZCBOR_MAX_RECURSION_DEPTH when compiling the library to bound the number
+ * of nested maps/lists skipped by one call. Exceeding this bound returns false
+ * with ZCBOR_ERR_ITERATIONS and leaves the caller's payload and element count
+ * unchanged. Tags do not add recursion. This limit is independent of the state
+ * backup count; skipping does not use backups. If undefined, no depth limit is
+ * imposed, so callers must otherwise bound input nesting to fit their stack.
+ *
  * @param[inout] state   The current state of the decoding.
  * @param[in]    unused  Unused parameter to maintain signature parity with
  *                       @ref zcbor_decoder_t.

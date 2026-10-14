@@ -92,6 +92,10 @@ Configuration
 -------------
 
 The C library has a few compile-time configuration options.
+`ZCBOR_MAX_RECURSION_DEPTH` bounds nested maps/lists in `zcbor_any_skip`, including
+skips used internally by unordered-map decoding. Choose it from the caller's stack
+budget; it is independent of decoder state backups. Exceeding it reports
+`ZCBOR_ERR_ITERATIONS`. Leaving it undefined preserves unbounded recursion.
 These configuration options can be enabled by adding them as compile definitions to the build.
 If using zcbor with Zephyr, use the [Kconfig options](https://github.com/zephyrproject-rtos/zephyr/blob/main/modules/zcbor/Kconfig) instead.
 

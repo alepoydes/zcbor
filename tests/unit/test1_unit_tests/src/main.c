@@ -1032,6 +1032,27 @@ ZTEST(zcbor_unit_tests, test_error_str)
 }
 
 
+ZTEST(zcbor_unit_tests, test_any_skip_recursion_limit)
+{
+	/* Known literal nesting, unrelated to the decoder's backup count. */
+	const uint8_t allowed[] = {0x81, 0xa1, 0x00, 0x9f, 0xc0, 0x81, 0x00, 0xff, 0x07};
+	const uint8_t too_deep[] = {0x81, 0xa1, 0x00, 0x9f, 0xc0, 0x81, 0x81, 0x00, 0xff};
+	ZCBOR_STATE_D(state, 0, allowed, sizeof(allowed), 2, 0);
+
+	zassert_true(zcbor_any_skip(state, NULL));
+	zassert_equal(state->payload, allowed + sizeof(allowed) - 1);
+	zassert_equal(state->elem_count, 1);
+	zassert_true(zcbor_uint32_expect(state, 7));
+
+	zcbor_new_decode_state(state, ZCBOR_ARRAY_SIZE(state), too_deep,
+		sizeof(too_deep), 1, NULL, 0);
+	zassert_false(zcbor_any_skip(state, NULL));
+	zassert_equal(zcbor_peek_error(state), ZCBOR_ERR_ITERATIONS);
+	zassert_equal(state->payload, too_deep);
+	zassert_equal(state->elem_count, 1);
+}
+
+
 ZTEST(zcbor_unit_tests, test_any_skip)
 {
 	uint8_t payload[200];
